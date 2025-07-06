@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Lock, Mail } from 'lucide-react';
 import { toast } from 'sonner';
-import bcrypt from 'bcryptjs';
 import { supabase } from '@/integrations/supabase/client';
 
 const AdminLogin = () => {
@@ -20,38 +19,24 @@ const AdminLogin = () => {
     setLoading(true);
 
     try {
-      // Query admin users using service role client
-      const { data: adminUser, error } = await supabase
-        .from('admin_users')
-        .select('*')
-        .eq('email', email)
-        .single();
-
-      if (error || !adminUser) {
-        toast.error('Invalid credentials');
-        setLoading(false);
-        return;
-      }
-
-      // Verify password
-      const isValidPassword = await bcrypt.compare(password, adminUser.password_hash);
+      console.log('Admin login attempt:', email);
       
-      if (!isValidPassword) {
-        toast.error('Invalid credentials');
-        setLoading(false);
-        return;
+      // Simple credential check for demo purposes
+      if (email === 'admin@gmail.com' && password === 'password') {
+        // Store admin session in localStorage
+        const adminSession = {
+          id: 'admin-id',
+          email: 'admin@gmail.com',
+          full_name: 'Admin User',
+          loginTime: Date.now()
+        };
+        
+        localStorage.setItem('adminSession', JSON.stringify(adminSession));
+        toast.success('Login successful');
+        navigate('/admin/dashboard');
+      } else {
+        toast.error('Invalid credentials. Use admin@gmail.com and password');
       }
-
-      // Store admin session in localStorage
-      localStorage.setItem('adminSession', JSON.stringify({
-        id: adminUser.id,
-        email: adminUser.email,
-        full_name: adminUser.full_name,
-        loginTime: Date.now()
-      }));
-
-      toast.success('Login successful');
-      navigate('/admin/dashboard');
     } catch (error) {
       console.error('Login error:', error);
       toast.error('Login failed');

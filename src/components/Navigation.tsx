@@ -5,12 +5,15 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/components/AuthProvider';
 import AuthModal from '@/components/AuthModal';
 import { Menu, X, Github } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const Navigation = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const { user, signOut } = useAuth();
+  const { user, signOut, loading } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -21,12 +24,30 @@ const Navigation = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const handleDashboardClick = () => {
+    console.log('Dashboard clicked, user:', user?.email);
+    if (user) {
+      navigate('/dashboard');
+    } else {
+      setShowAuthModal(true);
+    }
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+  };
+
   const navItems = [
     { label: 'Features', href: '#features' },
     { label: 'Pricing', href: '#pricing' },
     { label: 'Blog', href: '#blog' },
     { label: 'About', href: '#about' },
   ];
+
+  if (loading) {
+    return null;
+  }
 
   return (
     <>
@@ -35,8 +56,8 @@ const Navigation = () => {
         animate={{ y: 0 }}
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
           isScrolled 
-            ? 'bg-black/80 backdrop-blur-md border-b border-gray-800' 
-            : 'bg-transparent'
+            ? 'bg-black/95 backdrop-blur-md border-b border-gray-800' 
+            : 'bg-black/80'
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -44,7 +65,8 @@ const Navigation = () => {
             {/* Logo */}
             <motion.div
               whileHover={{ scale: 1.05 }}
-              className="flex items-center space-x-2"
+              className="flex items-center space-x-2 cursor-pointer"
+              onClick={() => navigate('/')}
             >
               <Github className="h-8 w-8 text-white" />
               <span className="text-xl font-bold text-white">DocuFlow</span>
@@ -52,7 +74,7 @@ const Navigation = () => {
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-8">
-              {navItems.map((item) => (
+              {location.pathname === '/' && navItems.map((item) => (
                 <motion.a
                   key={item.label}
                   href={item.href}
@@ -70,14 +92,14 @@ const Navigation = () => {
                 <>
                   <Button
                     variant="ghost"
-                    onClick={() => window.location.href = '/dashboard'}
+                    onClick={handleDashboardClick}
                     className="text-white hover:bg-gray-800"
                   >
                     Dashboard
                   </Button>
                   <Button
                     variant="outline"
-                    onClick={signOut}
+                    onClick={handleSignOut}
                     className="text-white border-gray-600 hover:bg-gray-800"
                   >
                     Sign Out
@@ -122,7 +144,7 @@ const Navigation = () => {
               className="md:hidden bg-black/95 backdrop-blur-md border-t border-gray-800"
             >
               <div className="px-4 py-6 space-y-4">
-                {navItems.map((item) => (
+                {location.pathname === '/' && navItems.map((item) => (
                   <a
                     key={item.label}
                     href={item.href}
@@ -137,14 +159,14 @@ const Navigation = () => {
                     <>
                       <Button
                         variant="ghost"
-                        onClick={() => window.location.href = '/dashboard'}
+                        onClick={handleDashboardClick}
                         className="w-full text-white hover:bg-gray-800"
                       >
                         Dashboard
                       </Button>
                       <Button
                         variant="outline"
-                        onClick={signOut}
+                        onClick={handleSignOut}
                         className="w-full text-white border-gray-600 hover:bg-gray-800"
                       >
                         Sign Out

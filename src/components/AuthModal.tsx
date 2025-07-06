@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { X, Mail, Lock, User } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -19,6 +20,7 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,6 +28,8 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
 
     try {
       if (isSignUp) {
+        const redirectUrl = `${window.location.origin}/`;
+        
         const { error } = await supabase.auth.signUp({
           email,
           password,
@@ -33,12 +37,14 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
             data: {
               full_name: fullName,
             },
+            emailRedirectTo: redirectUrl
           },
         });
 
         if (error) throw error;
         
         toast.success('Account created! Please check your email to verify your account.');
+        onClose();
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
@@ -50,12 +56,13 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
         toast.success('Signed in successfully!');
         onClose();
         
-        // Redirect to dashboard
+        // Redirect to dashboard after successful login
         setTimeout(() => {
-          window.location.href = '/dashboard';
-        }, 1000);
+          navigate('/dashboard');
+        }, 500);
       }
     } catch (error: any) {
+      console.error('Auth error:', error);
       toast.error(error.message);
     } finally {
       setLoading(false);
@@ -82,7 +89,7 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
             onClick={onClose}
           />
 
