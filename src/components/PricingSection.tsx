@@ -1,9 +1,17 @@
-
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Check, Star } from 'lucide-react';
+import { toast } from 'sonner';
 
 const PricingSection = () => {
+  const handleStripePayment = () => {
+    // Demo Stripe test payment - opens a test payment page
+    toast.success('Demo: Use test card 4242 4242 4242 4242, any future date, any CVC');
+    
+    // For demo purposes, redirect to a test Stripe link
+    window.open('https://buy.stripe.com/test_bIY4hDfne8kg5HydQQ', '_blank');
+  };
+
   return (
     <section id="pricing" className="py-24 px-4 sm:px-6 lg:px-8 animate-on-scroll">
       <div className="max-w-7xl mx-auto">
@@ -113,10 +121,22 @@ const PricingSection = () => {
 
             <Button 
               className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
-              onClick={() => window.open('https://buy.stripe.com/test_cNi00l7QKgMw1rf6nb0gw01', '_blank')}
+              onClick={handleStripePayment}
             >
               Upgrade to Pro
             </Button>
+
+            <div className="mt-4 text-center">
+              <p className="text-xs text-gray-500 mb-2">
+                Demo Stripe Test Credentials:
+              </p>
+              <p className="text-xs text-gray-400">
+                Card: 4242 4242 4242 4242
+              </p>
+              <p className="text-xs text-gray-400">
+                Exp: Any future date, CVC: Any 3 digits
+              </p>
+            </div>
           </motion.div>
         </div>
       </div>
