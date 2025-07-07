@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -186,11 +185,11 @@ const AdminDashboard = () => {
     try {
       console.log('Creating user:', newUser.email);
       
-      // Create user via Supabase Auth Admin API with email confirmation disabled
+      // Create user via Supabase Auth Admin API
       const { data: authData, error: authError } = await supabase.auth.admin.createUser({
         email: newUser.email,
         password: newUser.password,
-        email_confirm: true, // This confirms the email automatically
+        email_confirm: true,
         user_metadata: {
           full_name: newUser.full_name
         }
@@ -198,7 +197,15 @@ const AdminDashboard = () => {
 
       if (authError) {
         console.error('Auth error:', authError);
-        toast.error('Failed to create user: ' + authError.message);
+        
+        // Handle specific error cases
+        if (authError.message.includes('service_role')) {
+          toast.error('Admin permissions required. Please contact support.');
+        } else if (authError.message.includes('email')) {
+          toast.error('Email already exists or is invalid');
+        } else {
+          toast.error('Failed to create user: ' + authError.message);
+        }
         return;
       }
 
@@ -207,7 +214,7 @@ const AdminDashboard = () => {
       // Update profile with subscription info
       if (authData.user) {
         const subscriptionEnd = newUser.subscription_tier === 'premium' 
-          ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days from now
+          ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
           : null;
 
         const { error: profileError } = await supabase
@@ -231,11 +238,11 @@ const AdminDashboard = () => {
       setIsCreateUserOpen(false);
       toast.success('User created successfully and can now login');
       
-      // Fetch users again to update the list
-      setTimeout(() => fetchUsers(), 1000);
+      // Refresh the users list
+      fetchUsers();
     } catch (error) {
       console.error('Error creating user:', error);
-      toast.error('Failed to create user');
+      toast.error('Failed to create user. Please check admin permissions.');
     }
   };
 
@@ -313,7 +320,7 @@ const AdminDashboard = () => {
           content: newBlog.content,
           excerpt: newBlog.excerpt || newBlog.content.substring(0, 150) + '...',
           published: newBlog.published,
-          author_id: null // Admin created blog
+          author_id: null
         }])
         .select()
         .single();
@@ -325,10 +332,12 @@ const AdminDashboard = () => {
       }
 
       console.log('Blog created successfully:', data);
-      setBlogs([data, ...blogs]);
       setNewBlog({ title: '', content: '', excerpt: '', published: false });
       setIsCreateBlogOpen(false);
       toast.success('Blog created successfully');
+      
+      // Refresh the blogs list
+      fetchBlogs();
     } catch (error) {
       console.error('Error creating blog:', error);
       toast.error('Failed to create blog');

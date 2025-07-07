@@ -50,9 +50,6 @@ const Dashboard = () => {
 
       if (error) throw error;
       setDocuments(data || []);
-      
-      // Refetch subscription data to update document count
-      await refetch();
     } catch (error) {
       console.error('Error fetching documents:', error);
       toast.error('Failed to fetch documents');
@@ -92,8 +89,10 @@ const Dashboard = () => {
       setIsCreateOpen(false);
       toast.success('Document created successfully');
       
-      // Refetch subscription data to update document count
-      await refetch();
+      // Trigger refetch after a short delay to ensure the trigger has updated the count
+      setTimeout(async () => {
+        await refetch();
+      }, 500);
     } catch (error) {
       console.error('Error creating document:', error);
       toast.error('Failed to create document');
@@ -140,8 +139,10 @@ const Dashboard = () => {
       setDocuments(documents.filter(doc => doc.id !== id));
       toast.success('Document deleted successfully');
       
-      // Refetch subscription data to update document count
-      await refetch();
+      // Trigger refetch after a short delay to ensure the trigger has updated the count
+      setTimeout(async () => {
+        await refetch();
+      }, 500);
     } catch (error) {
       console.error('Error deleting document:', error);
       toast.error('Failed to delete document');
