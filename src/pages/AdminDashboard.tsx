@@ -186,10 +186,11 @@ const AdminDashboard = () => {
     try {
       console.log('Creating user:', newUser.email);
       
-      // Create user via Supabase Auth Admin API
+      // Create user via Supabase Auth Admin API with email confirmation disabled
       const { data: authData, error: authError } = await supabase.auth.admin.createUser({
         email: newUser.email,
         password: newUser.password,
+        email_confirm: true, // This confirms the email automatically
         user_metadata: {
           full_name: newUser.full_name
         }
@@ -228,7 +229,7 @@ const AdminDashboard = () => {
 
       setNewUser({ email: '', password: '', full_name: '', subscription_tier: 'free' });
       setIsCreateUserOpen(false);
-      toast.success('User created successfully');
+      toast.success('User created successfully and can now login');
       
       // Fetch users again to update the list
       setTimeout(() => fetchUsers(), 1000);
@@ -311,7 +312,8 @@ const AdminDashboard = () => {
           title: newBlog.title,
           content: newBlog.content,
           excerpt: newBlog.excerpt || newBlog.content.substring(0, 150) + '...',
-          published: newBlog.published
+          published: newBlog.published,
+          author_id: null // Admin created blog
         }])
         .select()
         .single();

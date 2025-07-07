@@ -22,7 +22,7 @@ interface Document {
 
 const Dashboard = () => {
   const { user, signOut } = useAuth();
-  const { subscription, canCreateDocument, isPremium } = useSubscription();
+  const { subscription, canCreateDocument, isPremium, refetch } = useSubscription();
   const navigate = useNavigate();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,6 +50,9 @@ const Dashboard = () => {
 
       if (error) throw error;
       setDocuments(data || []);
+      
+      // Refetch subscription data to update document count
+      await refetch();
     } catch (error) {
       console.error('Error fetching documents:', error);
       toast.error('Failed to fetch documents');
@@ -88,6 +91,9 @@ const Dashboard = () => {
       setNewDoc({ title: '', content: '' });
       setIsCreateOpen(false);
       toast.success('Document created successfully');
+      
+      // Refetch subscription data to update document count
+      await refetch();
     } catch (error) {
       console.error('Error creating document:', error);
       toast.error('Failed to create document');
@@ -133,6 +139,9 @@ const Dashboard = () => {
 
       setDocuments(documents.filter(doc => doc.id !== id));
       toast.success('Document deleted successfully');
+      
+      // Refetch subscription data to update document count
+      await refetch();
     } catch (error) {
       console.error('Error deleting document:', error);
       toast.error('Failed to delete document');
