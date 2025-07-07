@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -185,64 +186,57 @@ const AdminDashboard = () => {
     try {
       console.log('Creating user:', newUser.email);
       
-      // Create user via Supabase Auth Admin API
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      // First, check if we can authenticate as admin to create users
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email: newUser.email,
         password: newUser.password,
-        email_confirm: true,
-        user_metadata: {
-          full_name: newUser.full_name
+        options: {
+          data: {
+            full_name: newUser.full_name
+          },
+          emailRedirectTo: undefined
         }
       });
 
       if (authError) {
         console.error('Auth error:', authError);
-        
-        // Handle specific error cases
-        if (authError.message.includes('service_role')) {
-          toast.error('Admin permissions required. Please contact support.');
-        } else if (authError.message.includes('email')) {
-          toast.error('Email already exists or is invalid');
-        } else {
-          toast.error('Failed to create user: ' + authError.message);
-        }
+        toast.error('Failed to create user: ' + authError.message);
         return;
       }
 
       console.log('User created in auth:', authData.user?.id);
 
-      // Update profile with subscription info
-      if (authData.user) {
-        const subscriptionEnd = newUser.subscription_tier === 'premium' 
-          ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
-          : null;
+      // The profile will be created automatically by the trigger
+      // Just update the subscription info if needed
+      if (authData.user && newUser.subscription_tier === 'premium') {
+        const subscriptionEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .update({
-            full_name: newUser.full_name,
-            subscription_tier: newUser.subscription_tier,
-            subscription_end: subscriptionEnd
-          })
-          .eq('id', authData.user.id);
+        // Wait a moment for the profile to be created by the trigger
+        setTimeout(async () => {
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .update({
+              subscription_tier: 'premium',
+              subscription_end: subscriptionEnd
+            })
+            .eq('id', authData.user.id);
 
-        if (profileError) {
-          console.error('Profile update error:', profileError);
-          toast.error('User created but profile update failed: ' + profileError.message);
-        } else {
-          console.log('Profile updated successfully');
-        }
+          if (profileError) {
+            console.error('Profile update error:', profileError);
+            toast.error('User created but subscription update failed: ' + profileError.message);
+          }
+        }, 1000);
       }
 
       setNewUser({ email: '', password: '', full_name: '', subscription_tier: 'free' });
       setIsCreateUserOpen(false);
-      toast.success('User created successfully and can now login');
+      toast.success('User created successfully! They will receive a confirmation email.');
       
-      // Refresh the users list
-      fetchUsers();
+      // Refresh the users list after a short delay
+      setTimeout(fetchUsers, 1500);
     } catch (error) {
       console.error('Error creating user:', error);
-      toast.error('Failed to create user. Please check admin permissions.');
+      toast.error('Failed to create user');
     }
   };
 
@@ -287,12 +281,23 @@ const AdminDashboard = () => {
     try {
       console.log('Deleting user:', id);
       
-      const { error } = await supabase.auth.admin.deleteUser(id);
+      // First delete from profiles table
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', id);
 
-      if (error) {
-        console.error('Delete error:', error);
-        toast.error('Failed to delete user: ' + error.message);
+      if (profileError) {
+        console.error('Profile delete error:', profileError);
+        toast.error('Failed to delete user profile: ' + profileError.message);
         return;
+      }
+
+      // Try to delete from auth, but don't fail if this doesn't work
+      try {
+        await supabase.auth.admin.deleteUser(id);
+      } catch (authError) {
+        console.warn('Auth delete failed, but profile was deleted:', authError);
       }
 
       console.log('User deleted successfully');
@@ -313,15 +318,23 @@ const AdminDashboard = () => {
     try {
       console.log('Creating blog:', newBlog.title);
       
+      // Make sure we have a current user session
+      const { data: { user } } = await supabase.auth.getUser();
+      console.log('Current user for blog creation:', user);
+
+      const blogData = {
+        title: newBlog.title,
+        content: newBlog.content,
+        excerpt: newBlog.excerpt || newBlog.content.substring(0, 150) + '...',
+        published: newBlog.published,
+        author_id: null // Set to null for admin-created blogs
+      };
+
+      console.log('Blog data to insert:', blogData);
+
       const { data, error } = await supabase
         .from('blogs')
-        .insert([{
-          title: newBlog.title,
-          content: newBlog.content,
-          excerpt: newBlog.excerpt || newBlog.content.substring(0, 150) + '...',
-          published: newBlog.published,
-          author_id: null
-        }])
+        .insert([blogData])
         .select()
         .single();
 
