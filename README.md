@@ -1,19 +1,10 @@
-# Welcome to your Lovable project
+# Welcome to your my MVP
 
 ## Project info
 
-**URL**: https://lovable.dev/projects/2c808de0-fb4e-4ad2-a626-fbed4ba25ff6
-
-## How can I edit this code?
-
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/2c808de0-fb4e-4ad2-a626-fbed4ba25ff6) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
+**URL**: https://ahmad-saas.vercel.app/
+# Full Stack app made with React integrated with supabase and stripe payment 
+## Copy to visual studio code
 **Use your preferred IDE**
 
 If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
@@ -24,10 +15,10 @@ Follow these steps:
 
 ```sh
 # Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+git clone https://github.com/Ahmadjamil888/lumina-flow-saas.git
 
 # Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+cd lumina-flow-saas
 
 # Step 3: Install the necessary dependencies.
 npm i
@@ -35,7 +26,15 @@ npm i
 # Step 4: Start the development server with auto-reloading and an instant preview.
 npm run dev
 ```
-
+# App running
+- Go and create a account as user
+- Stripe setup just upload your payment link in code
+- to login as admin use the following credentials:
+- go to "/admin" in url
+```
+admin@gmail.com
+password
+```
 **Edit a file directly in GitHub**
 
 - Navigate to the desired file(s).
@@ -62,12 +61,11 @@ This project is built with:
 
 ## How can I deploy this project?
 
-Simply open [Lovable](https://lovable.dev/projects/2c808de0-fb4e-4ad2-a626-fbed4ba25ff6) and click on Share -> Publish.
+Simply open [vercel](vercel.com) and click on Share -> Publish.
 
-## Can I connect a custom domain to my Lovable project?
+## Can I connect a custom domain to this?
 
 Yes, you can!
 
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
