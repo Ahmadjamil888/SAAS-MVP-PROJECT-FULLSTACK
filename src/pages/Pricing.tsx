@@ -4,23 +4,22 @@ import { Button } from '@/components/ui/button';
 import { Check, Star } from 'lucide-react';
 import { toast } from 'sonner';
 
-const PricingSection = () => {
+const Pricing = () => {
   const handleStripePayment = () => {
     toast.success('Redirecting to Stripe checkout...');
     window.open('https://buy.stripe.com/test_cNi00l7QKgMw1rf6nb0gw01', '_blank');
   };
 
   return (
-    <section id="pricing" className="py-24 px-4 sm:px-6 lg:px-8 animate-on-scroll">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-black text-white">
+      <div className="container mx-auto px-4 py-24">
         <motion.div
           initial={{ opacity: 0, y: 50 }}
-          whileInView={{ opacity: 1, y: 0 }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className="text-3xl md:text-5xl font-bold mb-6">
+          <h1 className="text-5xl font-bold mb-8">
             <span className="bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
               Simple, transparent
             </span>
@@ -28,7 +27,7 @@ const PricingSection = () => {
             <span className="bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">
               pricing
             </span>
-          </h2>
+          </h1>
           <p className="text-xl text-gray-400 max-w-3xl mx-auto">
             Choose the plan that's right for you. Upgrade or downgrade at any time.
           </p>
@@ -38,9 +37,8 @@ const PricingSection = () => {
           {/* Free Plan */}
           <motion.div
             initial={{ opacity: 0, y: 50 }}
-            whileInView={{ opacity: 1, y: 0 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.1 }}
-            viewport={{ once: true }}
             className="relative p-8 rounded-2xl border border-gray-800 bg-gray-900/50 backdrop-blur-sm"
           >
             <div className="mb-8">
@@ -78,9 +76,8 @@ const PricingSection = () => {
           {/* Pro Plan */}
           <motion.div
             initial={{ opacity: 0, y: 50 }}
-            whileInView={{ opacity: 1, y: 0 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            viewport={{ once: true }}
             className="relative p-8 rounded-2xl border-2 border-blue-500 bg-gradient-to-br from-blue-500/10 to-purple-600/10 backdrop-blur-sm"
           >
             {/* Popular badge */}
@@ -126,8 +123,8 @@ const PricingSection = () => {
           </motion.div>
         </div>
       </div>
-    </section>
+    </div>
   );
 };
 
-export default PricingSection;
+export default Pricing;

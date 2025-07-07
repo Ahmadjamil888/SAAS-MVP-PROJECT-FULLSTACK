@@ -1,206 +1,175 @@
 
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Menu, X } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
-import AuthModal from '@/components/AuthModal';
-import { Menu, X, Github } from 'lucide-react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
-const Navigation = () => {
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [showAuthModal, setShowAuthModal] = useState(false);
-  const { user, signOut, loading } = useAuth();
+interface NavigationProps {
+  onAuthClick: () => void;
+}
+
+const Navigation = ({ onAuthClick }: NavigationProps) => {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  const handleDashboardClick = () => {
-    console.log('Dashboard clicked, user:', user?.email);
-    if (user) {
-      navigate('/dashboard');
-    } else {
-      setShowAuthModal(true);
-    }
-  };
 
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
   };
 
-  const navItems = [
-    { label: 'Features', href: '#features' },
-    { label: 'Pricing', href: '#pricing' },
-    { label: 'Blog', href: '#blog' },
-    { label: 'About', href: '#about' },
-  ];
-
-  if (loading) {
-    return null;
-  }
+  const scrollToSection = (sectionId: string) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+    setIsMenuOpen(false);
+  };
 
   return (
-    <>
-      <motion.nav
-        initial={{ y: -100 }}
-        animate={{ y: 0 }}
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          isScrolled 
-            ? 'bg-black/95 backdrop-blur-md border-b border-gray-800' 
-            : 'bg-black/80'
-        }`}
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              className="flex items-center space-x-2 cursor-pointer"
-              onClick={() => navigate('/')}
-            >
-              <Github className="h-8 w-8 text-white" />
-              <span className="text-xl font-bold text-white">DocuFlow</span>
-            </motion.div>
-
-            {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center space-x-8">
-              {location.pathname === '/' && navItems.map((item) => (
-                <motion.a
-                  key={item.label}
-                  href={item.href}
-                  whileHover={{ y: -2 }}
-                  className="text-gray-300 hover:text-white transition-colors duration-200 font-medium"
-                >
-                  {item.label}
-                </motion.a>
-              ))}
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-md border-b border-gray-800">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16">
+          {/* Logo */}
+          <Link to="/" className="flex items-center space-x-2">
+            <div className="text-2xl font-bold bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">
+              DocuFlow
             </div>
+          </Link>
 
-            {/* Desktop Auth Buttons */}
-            <div className="hidden md:flex items-center space-x-4">
-              {user ? (
-                <>
-                  <Button
-                    variant="ghost"
-                    onClick={handleDashboardClick}
-                    className="text-white hover:bg-gray-800"
-                  >
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center space-x-8">
+            <Link to="/about" className="text-gray-300 hover:text-white transition-colors">
+              About
+            </Link>
+            <Link to="/features" className="text-gray-300 hover:text-white transition-colors">
+              Features
+            </Link>
+            <Link to="/pricing" className="text-gray-300 hover:text-white transition-colors">
+              Pricing
+            </Link>
+            <Link to="/docs" className="text-gray-300 hover:text-white transition-colors">
+              Docs
+            </Link>
+            <Link to="/blog" className="text-gray-300 hover:text-white transition-colors">
+              Blog
+            </Link>
+            
+            {user ? (
+              <div className="flex items-center space-x-4">
+                <Link to="/dashboard">
+                  <Button variant="outline" className="border-gray-600 text-white hover:bg-gray-800">
                     Dashboard
                   </Button>
-                  <Button
-                    variant="outline"
-                    onClick={handleSignOut}
-                    className="text-white border-gray-600 hover:bg-gray-800"
-                  >
-                    Sign Out
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Button
-                    variant="ghost"
-                    onClick={() => setShowAuthModal(true)}
-                    className="text-white hover:bg-gray-800"
-                  >
-                    Sign In
-                  </Button>
-                  <Button
-                    onClick={() => setShowAuthModal(true)}
-                    className="bg-white text-black hover:bg-gray-200"
-                  >
-                    Get Started
-                  </Button>
-                </>
-              )}
-            </div>
+                </Link>
+                <Button
+                  onClick={handleSignOut}
+                  variant="ghost"
+                  className="text-gray-300 hover:text-white"
+                >
+                  Sign Out
+                </Button>
+              </div>
+            ) : (
+              <Button
+                onClick={onAuthClick}
+                className="bg-white text-black hover:bg-gray-200"
+              >
+                Get Started
+              </Button>
+            )}
+          </div>
 
-            {/* Mobile Menu Button */}
-            <button
-              className="md:hidden p-2 text-white"
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          {/* Mobile menu button */}
+          <div className="md:hidden">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="text-white"
             >
-              {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
+              {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </Button>
           </div>
         </div>
 
-        {/* Mobile Menu */}
-        <AnimatePresence>
-          {isMobileMenuOpen && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="md:hidden bg-black/95 backdrop-blur-md border-t border-gray-800"
-            >
-              <div className="px-4 py-6 space-y-4">
-                {location.pathname === '/' && navItems.map((item) => (
-                  <a
-                    key={item.label}
-                    href={item.href}
-                    className="block text-gray-300 hover:text-white transition-colors duration-200 font-medium"
-                    onClick={() => setIsMobileMenuOpen(false)}
+        {/* Mobile Navigation */}
+        {isMenuOpen && (
+          <div className="md:hidden py-4 border-t border-gray-800">
+            <div className="flex flex-col space-y-4">
+              <Link 
+                to="/about" 
+                className="text-gray-300 hover:text-white transition-colors px-2 py-1"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                About
+              </Link>
+              <Link 
+                to="/features" 
+                className="text-gray-300 hover:text-white transition-colors px-2 py-1"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Features
+              </Link>
+              <Link 
+                to="/pricing" 
+                className="text-gray-300 hover:text-white transition-colors px-2 py-1"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Pricing
+              </Link>
+              <Link 
+                to="/docs" 
+                className="text-gray-300 hover:text-white transition-colors px-2 py-1"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Docs
+              </Link>
+              <Link 
+                to="/blog" 
+                className="text-gray-300 hover:text-white transition-colors px-2 py-1"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Blog
+              </Link>
+              
+              {user ? (
+                <div className="flex flex-col space-y-2 pt-4 border-t border-gray-800">
+                  <Link to="/dashboard" onClick={() => setIsMenuOpen(false)}>
+                    <Button variant="outline" className="w-full border-gray-600 text-white hover:bg-gray-800">
+                      Dashboard
+                    </Button>
+                  </Link>
+                  <Button
+                    onClick={() => {
+                      handleSignOut();
+                      setIsMenuOpen(false);
+                    }}
+                    variant="ghost"
+                    className="w-full text-gray-300 hover:text-white"
                   >
-                    {item.label}
-                  </a>
-                ))}
-                <div className="pt-4 border-t border-gray-800 space-y-2">
-                  {user ? (
-                    <>
-                      <Button
-                        variant="ghost"
-                        onClick={handleDashboardClick}
-                        className="w-full text-white hover:bg-gray-800"
-                      >
-                        Dashboard
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={handleSignOut}
-                        className="w-full text-white border-gray-600 hover:bg-gray-800"
-                      >
-                        Sign Out
-                      </Button>
-                    </>
-                  ) : (
-                    <>
-                      <Button
-                        variant="ghost"
-                        onClick={() => setShowAuthModal(true)}
-                        className="w-full text-white hover:bg-gray-800"
-                      >
-                        Sign In
-                      </Button>
-                      <Button
-                        onClick={() => setShowAuthModal(true)}
-                        className="w-full bg-white text-black hover:bg-gray-200"
-                      >
-                        Get Started
-                      </Button>
-                    </>
-                  )}
+                    Sign Out
+                  </Button>
                 </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.nav>
-
-      <AuthModal 
-        isOpen={showAuthModal} 
-        onClose={() => setShowAuthModal(false)} 
-      />
-    </>
+              ) : (
+                <div className="pt-4 border-t border-gray-800">
+                  <Button
+                    onClick={() => {
+                      onAuthClick();
+                      setIsMenuOpen(false);
+                    }}
+                    className="w-full bg-white text-black hover:bg-gray-200"
+                  >
+                    Get Started
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </nav>
   );
 };
 

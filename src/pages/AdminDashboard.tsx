@@ -24,6 +24,7 @@ interface User {
   email: string;
   full_name: string;
   subscription_tier: string;
+  subscription_start: string;
   subscription_end: string;
   document_count: number;
   created_at: string;
@@ -88,12 +89,16 @@ const AdminDashboard = () => {
 
   // Set up real-time subscriptions
   useEffect(() => {
+    if (!adminSession) return;
+
+    console.log('Setting up real-time subscriptions...');
+    
     const usersChannel = supabase
       .channel('admin-users-changes')
       .on('postgres_changes', 
         { event: '*', schema: 'public', table: 'profiles' }, 
-        () => {
-          console.log('Users data changed, refreshing...');
+        (payload) => {
+          console.log('Users data changed:', payload);
           fetchUsers();
         }
       )
@@ -103,18 +108,19 @@ const AdminDashboard = () => {
       .channel('admin-blogs-changes')
       .on('postgres_changes', 
         { event: '*', schema: 'public', table: 'blogs' }, 
-        () => {
-          console.log('Blogs data changed, refreshing...');
+        (payload) => {
+          console.log('Blogs data changed:', payload);
           fetchBlogs();
         }
       )
       .subscribe();
 
     return () => {
+      console.log('Cleaning up real-time subscriptions...');
       supabase.removeChannel(usersChannel);
       supabase.removeChannel(blogsChannel);
     };
-  }, []);
+  }, [adminSession]);
 
   const fetchData = async () => {
     try {
@@ -129,7 +135,7 @@ const AdminDashboard = () => {
 
   const fetchUsers = async () => {
     try {
-      // Use service role or create an admin function - for now, try direct query
+      console.log('Fetching users...');
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -137,18 +143,7 @@ const AdminDashboard = () => {
 
       if (error) {
         console.error('Error fetching users:', error);
-        // If direct query fails due to RLS, create sample data for demo
-        setUsers([
-          {
-            id: '1',
-            email: 'demo@example.com',
-            full_name: 'Demo User',
-            subscription_tier: 'free',
-            subscription_end: '',
-            document_count: 3,
-            created_at: new Date().toISOString()
-          }
-        ]);
+        toast.error('Failed to fetch users: ' + error.message);
         return;
       }
       
@@ -162,12 +157,19 @@ const AdminDashboard = () => {
 
   const fetchBlogs = async () => {
     try {
+      console.log('Fetching blogs...');
       const { data, error } = await supabase
         .from('blogs')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching blogs:', error);
+        toast.error('Failed to fetch blogs: ' + error.message);
+        return;
+      }
+      
+      console.log('Fetched blogs:', data);
       setBlogs(data || []);
     } catch (error) {
       console.error('Error fetching blogs:', error);
@@ -182,7 +184,9 @@ const AdminDashboard = () => {
     }
 
     try {
-      // Create user via Supabase Auth
+      console.log('Creating user:', newUser.email);
+      
+      // Create user via Supabase Auth Admin API
       const { data: authData, error: authError } = await supabase.auth.admin.createUser({
         email: newUser.email,
         password: newUser.password,
@@ -191,27 +195,43 @@ const AdminDashboard = () => {
         }
       });
 
-      if (authError) throw authError;
+      if (authError) {
+        console.error('Auth error:', authError);
+        toast.error('Failed to create user: ' + authError.message);
+        return;
+      }
+
+      console.log('User created in auth:', authData.user?.id);
 
       // Update profile with subscription info
       if (authData.user) {
+        const subscriptionEnd = newUser.subscription_tier === 'premium' 
+          ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days from now
+          : null;
+
         const { error: profileError } = await supabase
           .from('profiles')
           .update({
             full_name: newUser.full_name,
-            subscription_tier: newUser.subscription_tier
+            subscription_tier: newUser.subscription_tier,
+            subscription_end: subscriptionEnd
           })
           .eq('id', authData.user.id);
 
         if (profileError) {
           console.error('Profile update error:', profileError);
+          toast.error('User created but profile update failed: ' + profileError.message);
+        } else {
+          console.log('Profile updated successfully');
         }
       }
 
       setNewUser({ email: '', password: '', full_name: '', subscription_tier: 'free' });
       setIsCreateUserOpen(false);
       toast.success('User created successfully');
-      await fetchUsers();
+      
+      // Fetch users again to update the list
+      setTimeout(() => fetchUsers(), 1000);
     } catch (error) {
       console.error('Error creating user:', error);
       toast.error('Failed to create user');
@@ -222,18 +242,29 @@ const AdminDashboard = () => {
     if (!editingUser) return;
 
     try {
+      console.log('Updating user:', editingUser.id);
+      
+      const subscriptionEnd = editingUser.subscription_tier === 'premium' 
+        ? (editingUser.subscription_end || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString())
+        : null;
+
       const { error } = await supabase
         .from('profiles')
         .update({
           full_name: editingUser.full_name,
           subscription_tier: editingUser.subscription_tier,
-          subscription_end: editingUser.subscription_end || null
+          subscription_end: subscriptionEnd
         })
         .eq('id', editingUser.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Update error:', error);
+        toast.error('Failed to update user: ' + error.message);
+        return;
+      }
 
-      setUsers(users.map(user => user.id === editingUser.id ? editingUser : user));
+      console.log('User updated successfully');
+      setUsers(users.map(user => user.id === editingUser.id ? { ...editingUser, subscription_end: subscriptionEnd } : user));
       setEditingUser(null);
       toast.success('User updated successfully');
     } catch (error) {
@@ -243,13 +274,20 @@ const AdminDashboard = () => {
   };
 
   const deleteUser = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this user?')) return;
+    if (!confirm('Are you sure you want to delete this user? This will permanently delete their account and all associated data.')) return;
 
     try {
+      console.log('Deleting user:', id);
+      
       const { error } = await supabase.auth.admin.deleteUser(id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Delete error:', error);
+        toast.error('Failed to delete user: ' + error.message);
+        return;
+      }
 
+      console.log('User deleted successfully');
       setUsers(users.filter(user => user.id !== id));
       toast.success('User deleted successfully');
     } catch (error) {
@@ -265,6 +303,8 @@ const AdminDashboard = () => {
     }
 
     try {
+      console.log('Creating blog:', newBlog.title);
+      
       const { data, error } = await supabase
         .from('blogs')
         .insert([{
@@ -276,8 +316,13 @@ const AdminDashboard = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Blog create error:', error);
+        toast.error('Failed to create blog: ' + error.message);
+        return;
+      }
 
+      console.log('Blog created successfully:', data);
       setBlogs([data, ...blogs]);
       setNewBlog({ title: '', content: '', excerpt: '', published: false });
       setIsCreateBlogOpen(false);
@@ -295,6 +340,8 @@ const AdminDashboard = () => {
     }
 
     try {
+      console.log('Updating blog:', editingBlog.id);
+      
       const { data, error } = await supabase
         .from('blogs')
         .update({
@@ -307,8 +354,13 @@ const AdminDashboard = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Blog update error:', error);
+        toast.error('Failed to update blog: ' + error.message);
+        return;
+      }
 
+      console.log('Blog updated successfully:', data);
       setBlogs(blogs.map(blog => blog.id === editingBlog.id ? data : blog));
       setEditingBlog(null);
       toast.success('Blog updated successfully');
@@ -322,13 +374,20 @@ const AdminDashboard = () => {
     if (!confirm('Are you sure you want to delete this blog?')) return;
 
     try {
+      console.log('Deleting blog:', id);
+      
       const { error } = await supabase
         .from('blogs')
         .delete()
         .eq('id', id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Blog delete error:', error);
+        toast.error('Failed to delete blog: ' + error.message);
+        return;
+      }
 
+      console.log('Blog deleted successfully');
       setBlogs(blogs.filter(blog => blog.id !== id));
       toast.success('Blog deleted successfully');
     } catch (error) {
@@ -345,7 +404,7 @@ const AdminDashboard = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <div className="text-xl">Loading...</div>
+        <div className="text-xl">Loading admin dashboard...</div>
       </div>
     );
   }
@@ -428,10 +487,10 @@ const AdminDashboard = () => {
             <Tabs defaultValue="users" className="space-y-6">
               <TabsList className="bg-gray-900 border-b border-gray-700">
                 <TabsTrigger value="users" className="text-gray-300 data-[state=active]:text-white">
-                  Users
+                  Users ({totalUsers})
                 </TabsTrigger>
                 <TabsTrigger value="blogs" className="text-gray-300 data-[state=active]:text-white">
-                  Blogs
+                  Blogs ({blogs.length})
                 </TabsTrigger>
               </TabsList>
 
@@ -478,7 +537,7 @@ const AdminDashboard = () => {
                             <TableCell className="text-gray-300">
                               {user.subscription_end ? new Date(user.subscription_end).toLocaleDateString() : 'N/A'}
                             </TableCell>
-                            <TableCell className="text-gray-300">{user.document_count}</TableCell>
+                            <TableCell className="text-gray-300">{user.document_count || 0}</TableCell>
                             <TableCell className="text-gray-300">
                               {new Date(user.created_at).toLocaleDateString()}
                             </TableCell>
