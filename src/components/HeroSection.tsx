@@ -51,12 +51,13 @@ const HeroSection = () => {
           className="flex flex-col sm:flex-row gap-4 justify-center items-center"
         >
           <Button
-            size="lg"
-            className="bg-white text-black hover:bg-gray-200 text-lg px-8 py-6 rounded-lg font-semibold group"
-          >
-            Start Building
-            <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-          </Button>
+  size="lg"
+  className="bg-white text-black text-lg px-8 py-6 rounded-lg font-semibold hover:bg-gray-200 group transition-colors"
+>
+  Start Building
+  <ArrowRight className="ml-2 w-5 h-5 transform transition-transform group-hover:translate-x-1" />
+</Button>
+
           
           <Button
             variant="outline"
