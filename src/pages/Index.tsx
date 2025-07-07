@@ -1,5 +1,5 @@
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -9,12 +9,14 @@ import PricingSection from '@/components/PricingSection';
 import BlogSection from '@/components/BlogSection';
 import Footer from '@/components/Footer';
 import Navigation from '@/components/Navigation';
+import AuthModal from '@/components/AuthModal';
 import ThreeBackground from '@/components/ThreeBackground';
 
 gsap.registerPlugin(ScrollTrigger);
 
 const Index = () => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -58,15 +60,20 @@ const Index = () => {
     return () => ctx.revert();
   }, []);
 
+  const handleAuthClick = () => {
+    setIsAuthModalOpen(true);
+  };
+
   return (
     <div ref={containerRef} className="relative min-h-screen bg-black text-white overflow-hidden">
       <ThreeBackground />
-      <Navigation />
+      <Navigation onAuthClick={handleAuthClick} />
       <HeroSection />
       <FeaturesSection />
       <PricingSection />
       <BlogSection />
       <Footer />
+      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
     </div>
   );
 };
